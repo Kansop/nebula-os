@@ -1,1 +1,45 @@
-<!doctype html><html><head><meta charset="utf-8"><title>NebulaOS</title></head><body><h1>NebulaOS is booting up…</h1></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NebulaOS</title>
+  <meta name="description" content="NebulaOS is a desktop operating system that runs in the browser.">
+  <meta name="theme-color" content="#070814">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NebulaOS">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/nebula.css">
+</head>
+<body>
+  <div id="os">
+    <div id="boot" class="overlay">
+      <div class="boot-card">
+        <svg class="logo" width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+          <defs>
+            <linearGradient id="boot-logo" x1="10" y1="6" x2="78" y2="84">
+              <stop offset="0" stop-color="#2a1b68"/>
+              <stop offset="0.55" stop-color="#4a33a8"/>
+              <stop offset="1" stop-color="#14556e"/>
+            </linearGradient>
+          </defs>
+          <rect width="88" height="88" rx="22" fill="url(#boot-logo)"/>
+          <ellipse cx="44" cy="44" rx="26" ry="10" fill="none" stroke="#efe8ff" stroke-width="2.2" transform="rotate(-24 44 44)"/>
+          <circle cx="44" cy="44" r="4.2" fill="#fff8e4"/>
+          <circle cx="66" cy="34" r="1.7" fill="#b9f3ff"/>
+          <circle cx="26" cy="56" r="1.4" fill="#ffc4e4"/>
+        </svg>
+        <h1>NebulaOS</h1>
+        <p id="boot-status">Starting</p>
+        <div class="boot-bar" aria-hidden="true"><span id="boot-fill"></span></div>
+        <button id="boot-skip" class="btn" type="button">Skip</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
