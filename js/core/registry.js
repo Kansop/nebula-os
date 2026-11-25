@@ -14,7 +14,18 @@ import { settingsApp } from '../apps/settings.js';
 import { tasksApp } from '../apps/tasks.js';
 import { terminalApp } from '../apps/terminal.js';
 import { viewerApp } from '../apps/viewer.js';
+import { archiveApp } from '../apps/archive.js';
+import { clipsApp } from '../apps/clips.js';
+import { contactsApp } from '../apps/contacts.js';
+import { docsApp } from '../apps/docs.js';
+import { kanbanApp } from '../apps/kanban.js';
+import { mailApp } from '../apps/mail.js';
+import { markdownApp } from '../apps/markdown.js';
+import { sheetApp } from '../apps/sheet.js';
+import { slidesApp } from '../apps/slides.js';
+import { storeApp } from '../apps/store.js';
 import { weatherApp } from '../apps/weather.js';
+import { writerApp } from '../apps/writer.js';
 import { breakoutApp } from '../games/breakout.js';
 import { g2048App } from '../games/g2048.js';
 import { minesApp } from '../games/mines.js';
@@ -36,6 +47,17 @@ export const APPS = [
   viewerApp,
   browserApp,
   weatherApp,
+  sheetApp,
+  writerApp,
+  slidesApp,
+  kanbanApp,
+  mailApp,
+  contactsApp,
+  markdownApp,
+  docsApp,
+  archiveApp,
+  clipsApp,
+  storeApp,
   settingsApp,
   tasksApp,
   snakeApp,

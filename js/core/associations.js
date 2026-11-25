@@ -4,9 +4,14 @@ import { extname } from './util.js';
 
 const TABLE = [
   { ext: 'txt', app: 'editor' },
-  { ext: 'md', app: 'editor', also: ['notes'] },
+  { ext: 'md', app: 'markdown', also: ['editor', 'notes'] },
   { ext: 'log', app: 'editor' },
-  { ext: 'csv', app: 'editor' },
+  { ext: 'csv', app: 'sheet', also: ['editor'] },
+  { ext: 'sheet', app: 'sheet' },
+  { ext: 'ndoc', app: 'writer', also: ['docs'] },
+  { ext: 'nslide', app: 'slides' },
+  { ext: 'zip', app: 'archive' },
+  { ext: 'pdf', app: 'docs' },
   { ext: 'json', app: 'code', also: ['editor'] },
   { ext: 'js', app: 'code', also: ['editor'] },
   { ext: 'mjs', app: 'code', also: ['editor'] },

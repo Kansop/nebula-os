@@ -10,5 +10,9 @@ export function createActions(env) {
     { id: 'mute', title: 'Mute or unmute', keywords: ['mute', 'volume', 'sound'], run() { env.settings.set('muted', !env.settings.get('muted')); } },
     { id: 'trash', title: 'Open Trash', keywords: ['trash', 'recycle', 'delete'], run() { env.openApp('files', { path: '/Trash' }); } },
     { id: 'install', title: 'Install NebulaOS', keywords: ['install', 'pwa', 'app'], run() { env.openApp('settings', { section: 'about' }); } },
+    { id: 'contrast', title: 'Toggle high contrast', keywords: ['contrast', 'accessibility', 'vision'], run() { env.settings.set('contrast', !env.settings.get('contrast')); } },
+    { id: 'screenshot', title: 'Screenshot the active window', keywords: ['screenshot', 'capture', 'picture'], run() { env.captureActive?.(); } },
+    { id: 'store', title: 'Open the App Store', keywords: ['store', 'install', 'remove', 'apps'], run() { env.openApp('store'); } },
+    { id: 'backup', title: 'Back up the disk', keywords: ['backup', 'export', 'restore'], run() { env.openApp('settings', { section: 'storage' }); } },
   ];
 }

@@ -95,6 +95,17 @@ const GLYPHS = {
   rect: '<rect x="5" y="6" width="14" height="12" rx="1.4"/>',
   circle: '<circle cx="12" cy="12" r="7"/>',
   hash: '<path d="M9 4.5 7.5 19.5M16.5 4.5 15 19.5M4.5 9h15M4 15h15"/>',
+  sheet: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M4 14h16M9 4v16M15 4v16"/>',
+  writer: '<path d="M6 4h9l3 3v13H6Z"/><path d="M15 4v3h3M8 12h8M8 16h5"/>',
+  slides: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M12 17v3"/>',
+  kanban: '<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/>',
+  mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>',
+  contacts: '<circle cx="9" cy="9" r="2.4"/><path d="M4.8 17.5a4.4 4.4 0 0 1 8.4 0M16 8h4M16 12h4M16 16h3"/>',
+  markdown: '<path d="M4 6h16v12H4Z"/><path d="M7 15V9l2.5 3L12 9v6M16 12l2 2 2-2M18 9v5"/>',
+  docs: '<path d="M7 3.5h7l4 4V20H7Z"/><path d="M14 3.5V8h4M9 12h6M9 16h4"/>',
+  archive: '<path d="M4 7h16v3H4zM6 10v8h12v-8M10 13h4"/>',
+  clips: '<rect x="8" y="7" width="11" height="13" rx="1.6"/><path d="M6 15H5.2A1.2 1.2 0 0 1 4 13.8V5.2A1.2 1.2 0 0 1 5.2 4H13"/>',
+  store: '<path d="M5 8h14l-1 11H6Z"/><path d="M8 8V6.5A4 4 0 0 1 16 6.5V8"/>',
 };
 
 const TILES = {
@@ -120,6 +131,17 @@ const TILES = {
   solitaire: ['#bbf7d0', '#166534'],
   breakout: ['#a5b4fc', '#1d4ed8'],
   trash: ['#fda4af', '#9f1239'],
+  sheet: ['#86efac', '#15803d'],
+  writer: ['#93c5fd', '#1d4ed8'],
+  slides: ['#fdba74', '#c2410c'],
+  kanban: ['#c4b5fd', '#6d28d9'],
+  mail: ['#7dd3fc', '#0369a1'],
+  contacts: ['#f9a8d4', '#be185d'],
+  markdown: ['#a5b4fc', '#4338ca'],
+  docs: ['#cbd5e1', '#334155'],
+  archive: ['#fcd34d', '#b45309'],
+  clips: ['#99f6e4', '#0f766e'],
+  store: ['#d8b4fe', '#7e22ce'],
 };
 
 const APP_GLYPH = {
@@ -145,6 +167,17 @@ const APP_GLYPH = {
   solitaire: 'cards',
   breakout: 'breakout',
   trash: 'trash',
+  sheet: 'sheet',
+  writer: 'writer',
+  slides: 'slides',
+  kanban: 'kanban',
+  mail: 'mail',
+  contacts: 'contacts',
+  markdown: 'markdown',
+  docs: 'docs',
+  archive: 'archive',
+  clips: 'clips',
+  store: 'store',
 };
 
 let seq = 0;

@@ -2,6 +2,7 @@
 
 export const SHORTCUTS = [
   ['Ctrl+K', 'Open search'],
+  ['Ctrl+Space', 'Command palette'],
   ['Ctrl+Esc', 'Open the start menu'],
   ['Alt+Tab', 'Next window'],
   ['Alt+Shift+Tab', 'Previous window'],

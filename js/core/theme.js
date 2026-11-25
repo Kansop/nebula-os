@@ -7,6 +7,7 @@ export function applyAppearance(settings, customWall) {
   root.dataset.wall = settings.get('wallpaper') || 'nebula';
   root.dataset.transparency = settings.get('transparency') === false ? 'off' : 'on';
   root.dataset.motion = settings.get('reducedMotion') ? 'reduce' : 'full';
+  root.dataset.contrast = settings.get('contrast') ? 'high' : 'off';
   root.style.setProperty('--accent', settings.get('accent') || '#7c6bff');
   root.style.setProperty('--dim', String(settings.get('dim') ?? 0));
   root.style.setProperty('--font-scale', String(settings.get('fontScale') || 1));
