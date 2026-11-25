@@ -47,6 +47,13 @@ export function defaultSettings() {
     timer: null,
     gameScores: {},
     welcomed: false,
+    removedApps: [],
+    contrast: false,
+    sounds: true,
+    widgetClock: true,
+    widgetNote: true,
+    widgetBoard: true,
+    clipHistory: [],
   };
 }
 
@@ -59,10 +66,11 @@ function merge(base, extra) {
   return out;
 }
 
-export function createSettings() {
+export function createSettings(userId) {
+  const key = userId ? `${KEY}:${userId}` : KEY;
   let data = defaultSettings();
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     if (raw) data = merge(data, JSON.parse(raw));
   } catch {
     data = defaultSettings();
@@ -70,7 +78,7 @@ export function createSettings() {
   const listeners = new Set();
   function persist() {
     try {
-      localStorage.setItem(KEY, JSON.stringify(data));
+      localStorage.setItem(key, JSON.stringify(data));
     } catch {
       /* quota: keep the session copy */
     }

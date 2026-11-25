@@ -8,4 +8,4 @@ npm test
 
 The test command runs headless checks for the virtual disk, the shell, the calculator, and the game rules. No build step is required.
 
-Files, notes, drawings, and settings stay in this browser profile (IndexedDB and localStorage). There is no server behind the apps.
+Files, notes, drawings, and settings stay in this browser profile (IndexedDB and localStorage). There is no server behind the apps. Each user has a separate disk. Sheets, Writer, Slides, Board, Mail, Contacts, Markdown, Documents, Archive, Clipboard, and the App Store are part of the desktop.

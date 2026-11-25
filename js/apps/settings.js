@@ -1,5 +1,6 @@
 /** Settings for appearance, account, sound, storage, and install. */
 
+import { isValidTree } from '../core/vfs.js';
 import { icon } from '../core/icons.js';
 import { ACCENTS, WALLPAPERS, hashPin } from '../core/settings.js';
 import { SHORTCUTS } from '../core/shortcuts.js';
@@ -14,6 +15,7 @@ const SECTIONS = [
   ['account', 'Account', 'user'],
   ['storage', 'Storage', 'layers'],
   ['keyboard', 'Keyboard', 'keyboard'],
+  ['access', 'Accessibility', 'eye'],
   ['about', 'About', 'info'],
 ];
 
@@ -54,6 +56,7 @@ export const settingsApp = {
       else if (section === 'account') account(main, env);
       else if (section === 'storage') storage(main, env);
       else if (section === 'keyboard') keyboard(main);
+      else if (section === 'access') access(main, env);
       else about(main, env);
     }
     const off = env.settings.onChange(() => { if (section === 'storage' || section === 'about') render(); });
@@ -123,11 +126,15 @@ function personal(main, env) {
 
 function desktop(main, env) {
   main.append(row('Weather widget', toggle(env, 'showWidget', true)));
-  main.append(el('p', { class: 'muted', text: 'The widget uses the same sample forecast as the Weather app.' }));
+  main.append(row('Clock widget', toggle(env, 'widgetClock', true)));
+  main.append(row('Note widget', toggle(env, 'widgetNote', true)));
+  main.append(row('Board widget', toggle(env, 'widgetBoard', true)));
+  main.append(el('p', { class: 'muted', text: 'The weather widget uses the same sample forecast as the Weather app.' }));
 }
 
 function sound(main, env) {
   main.append(row('Muted', toggle(env, 'muted', false)));
+  main.append(row('Interface sounds', toggle(env, 'sounds', true)));
   main.append(row('Volume', slider(env, 'volume', 0, 1, 0.01)));
 }
 
@@ -174,6 +181,22 @@ function account(main, env) {
   });
   main.append(el('div', { class: 'inline' }, [setPin, clear]));
   main.append(el('p', { class: 'muted', text: 'The PIN is stored as a hash in local settings. It is not an account password and does not leave this browser.' }));
+  main.append(el('h3', { text: 'People on this device' }));
+  for (const user of env.accounts?.list() || []) {
+    const line = el('div', { class: 'inline' });
+    line.append(el('span', { class: 'grow', text: user.name }));
+    const switcher = el('button', { class: 'btn btn-sm', type: 'button', text: user.id === env.accounts.active() ? 'Signed in' : 'Switch' });
+    switcher.disabled = user.id === env.accounts.active();
+    switcher.addEventListener('click', () => env.accounts.switchTo(user.id));
+    line.append(switcher);
+    main.append(line);
+  }
+  const create = el('button', { class: 'btn', type: 'button', text: 'New user' });
+  create.addEventListener('click', async () => {
+    const person = await env.dialogs.prompt({ title: 'New user', message: 'They get an empty disk. This user keeps the files already here.', ok: 'Create' });
+    if (person?.trim()) env.accounts.create(person.trim());
+  });
+  main.append(create);
 }
 
 function storage(main, env) {
@@ -190,6 +213,35 @@ function storage(main, env) {
     if (ok) env.fs.emptyTrash();
   });
   main.append(empty);
+  const exportBtn = el('button', { class: 'btn', type: 'button', text: 'Back up disk' });
+  const importBtn = el('button', { class: 'btn', type: 'button', text: 'Restore disk' });
+  const file = el('input', { type: 'file', accept: 'application/json,.json', hidden: true });
+  exportBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ kind: 'nebula-disk', version: 1, tree: env.fs.tree })], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'nebula-disk.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  importBtn.addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    const picked = file.files?.[0];
+    file.value = '';
+    if (!picked) return;
+    try {
+      const data = JSON.parse(await picked.text());
+      if (data?.kind !== 'nebula-disk' || !isValidTree(data.tree)) throw new Error('That file is not a NebulaOS disk backup.');
+      const ok = await env.dialogs.confirm({ title: 'Replace this disk?', message: 'The current files for this user will be replaced by the backup.', ok: 'Restore', danger: true });
+      if (!ok) return;
+      env.fs.loadTree(data.tree);
+      env.notify({ title: 'Disk restored', body: picked.name, app: 'settings' });
+    } catch (error) {
+      env.notify({ title: 'Restore failed', body: error.message, app: 'settings' });
+    }
+  });
+  main.append(el('div', { class: 'inline' }, [exportBtn, importBtn, file]));
+  main.append(el('p', { class: 'muted', text: 'A backup is a JSON file of this user’s virtual disk. It does not include other users.' }));
 }
 
 function keyboard(main) {
@@ -200,6 +252,13 @@ function keyboard(main) {
     list.append(line);
   }
   main.append(list);
+}
+
+function access(main, env) {
+  main.append(row('High contrast', toggle(env, 'contrast', false)));
+  main.append(row('Reduce motion', toggle(env, 'reducedMotion', false)));
+  main.append(row('Text size', slider(env, 'fontScale', 0.9, 1.4, 0.05)));
+  main.append(el('p', { class: 'muted', text: 'Arrow keys move between desktop icons. Enter opens the selected icon. Ctrl+Space opens the command palette.' }));
 }
 
 function about(main, env) {

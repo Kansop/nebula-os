@@ -498,6 +498,12 @@ export class VFS {
     return hits;
   }
 
+  loadTree(tree) {
+    if (!isValidTree(tree)) throw new FSError('EINVAL', '/', 'Invalid disk');
+    this.tree = tree;
+    this._changed();
+  }
+
   stats() {
     let files = 0;
     let dirs = 0;

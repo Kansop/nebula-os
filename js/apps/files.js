@@ -227,8 +227,14 @@ export const filesApp = {
         ghost?.remove();
         clearHot();
         if (!dragging) return;
-        const zone = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-drop]');
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        const zone = under?.closest('[data-drop]');
         const dest = zone?.dataset.drop;
+        const winEl = under?.closest('.window');
+        if (!dest && winEl?.dataset.app) {
+          paths().filter((itemPath) => fs.exists(itemPath) && fs.stat(itemPath).kind === 'file').forEach((itemPath) => env.openApp(winEl.dataset.app, { path: itemPath }));
+          return;
+        }
         if (!dest) return;
         try {
           if (dest === 'trash') paths().forEach((itemPath) => fs.remove(itemPath, { recursive: true }));

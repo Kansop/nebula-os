@@ -1,6 +1,8 @@
 /** Desktop chrome: icons, taskbar, start menu, lock screen, trays, and shortcuts. */
 
 import { eventsOn } from '../apps/calendar.js';
+import { openCardCount } from '../apps/kanban.js';
+import { isInstalled } from './catalog.js';
 import { appsForFile } from '../core/associations.js';
 import { appIcon, icon, logo } from '../core/icons.js';
 import { importFiles } from '../core/transfer.js';
@@ -37,11 +39,17 @@ export function createDesktop(os, api) {
   const deskSwitch = el('div', { class: 'desk-switch', 'aria-label': 'Virtual desktops' });
   const tray = el('div', { class: 'tray' });
   taskbar.append(startBtn, taskList, deskSwitch, tray);
-  desktop.append(widget, icons, windows, taskbar);
+  const widgetStack = el('div', { class: 'widget-stack' });
+  const clockWidget = el('button', { class: 'widget widget-mini', type: 'button' });
+  const noteWidget = el('button', { class: 'widget widget-mini', type: 'button' });
+  const boardWidget = el('button', { class: 'widget widget-mini', type: 'button' });
+  widgetStack.append(widget, clockWidget, noteWidget, boardWidget);
+  desktop.append(widgetStack, icons, windows, taskbar);
 
   const start = el('div', { id: 'start', class: 'start hidden', role: 'dialog', 'aria-label': 'Start menu' });
   const flyout = el('div', { id: 'flyout', class: 'flyout hidden' });
   const switcher = el('div', { id: 'switcher', class: 'switcher hidden' });
+  const palette = el('div', { id: 'palette', class: 'palette hidden', role: 'dialog', 'aria-label': 'Command palette' });
   const lock = buildLock();
   const shutdown = el('div', { id: 'shutdown', class: 'overlay hidden' });
   shutdown.append(el('div', { class: 'boot-card' }, [
@@ -51,7 +59,7 @@ export function createDesktop(os, api) {
   ]));
   const powerOn = el('button', { class: 'btn btn-primary', type: 'button', text: 'Power on' });
   shutdown.querySelector('.boot-card').append(powerOn);
-  os.append(wallpaper, dimmer, desktop, start, flyout, switcher, lock.el, shutdown);
+  os.append(wallpaper, dimmer, desktop, start, flyout, switcher, palette, lock.el, shutdown);
 
   const wm = createWindowManager(windows, {
     getDesktop: () => desktopIndex,
@@ -64,7 +72,11 @@ export function createDesktop(os, api) {
     start.classList.add('hidden');
     flyout.classList.add('hidden');
     switcher.classList.add('hidden');
+    palette.classList.add('hidden');
     api.menus.close();
+  }
+  function appVisible(id) {
+    return isInstalled(api.settings, id);
   }
   function openItem(item) {
     if (item.kind === 'app') api.openApp(item.id);
@@ -74,7 +86,7 @@ export function createDesktop(os, api) {
   }
 
   function iconItems() {
-    const apps = SHORTCUTS.map(([id, name]) => ({ key: `app:${id}`, kind: 'app', id, name }));
+    const apps = SHORTCUTS.filter(([id]) => appVisible(id)).map(([id, name]) => ({ key: `app:${id}`, kind: 'app', id, name }));
     let files = [];
     try {
       files = api.fs.list('/Home/Desktop').map((entry) => ({
@@ -170,8 +182,14 @@ export function createDesktop(os, api) {
       const up = (ev) => {
         btn.removeEventListener('pointermove', move);
         if (!dragging) return;
-        const zone = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-drop]');
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        const zone = under?.closest('[data-drop]');
         const dest = zone && zone !== btn ? zone.dataset.drop : '';
+        const winEl = under?.closest('.window');
+        if (!dest && item.kind === 'file' && winEl?.dataset.app) {
+          api.openApp(winEl.dataset.app, { path: item.path });
+          return;
+        }
         if (item.kind === 'file' && dest && dest !== item.path) {
           try {
             if (dest === 'trash') api.fs.remove(item.path, { recursive: true });
@@ -200,10 +218,21 @@ export function createDesktop(os, api) {
 
   function renderWidget() {
     const show = api.settings.get('showWidget') !== false;
-    widget.classList.toggle('hidden', !show);
+    widgetStack.classList.toggle('hidden', !show);
     if (!show) return;
     const city = cityById(api.settings.get('weatherCity'));
     widget.innerHTML = `<span class="badge">${SAMPLE_NOTE}</span><strong>${city.temp}°</strong><span>${city.name}</span><em>${city.condition}</em>`;
+    clockWidget.classList.toggle('hidden', api.settings.get('widgetClock') === false);
+    clockWidget.innerHTML = `<span class="muted">Clock</span><strong>${formatTime()}</strong>`;
+    noteWidget.classList.toggle('hidden', api.settings.get('widgetNote') === false);
+    let note = 'No notes yet';
+    try {
+      const first = api.fs.list('/Home/Notes').find((entry) => entry.kind === 'file');
+      if (first) note = String(api.fs.read(first.path)).replace(/\s+/g, ' ').trim().slice(0, 80) || first.name;
+    } catch { /* empty disk */ }
+    noteWidget.replaceChildren(el('span', { class: 'muted', text: 'Note' }), el('span', { text: note }));
+    boardWidget.classList.toggle('hidden', api.settings.get('widgetBoard') === false);
+    boardWidget.innerHTML = `<span class="muted">Board</span><strong>${openCardCount(api.fs)}</strong><span>open cards</span>`;
   }
 
   function renderTasks() {
@@ -214,7 +243,7 @@ export function createDesktop(os, api) {
     for (const win of wins) if (!ids.includes(win.appId)) ids.push(win.appId);
     for (const id of ids) {
       const app = api.getApp(id);
-      if (!app) continue;
+      if (!app || !appVisible(id)) continue;
       const mine = wins.filter((win) => win.appId === id);
       const btn = el('button', { class: `task-btn${mine.some((win) => win.active && !win.minimized) ? ' active' : ''}${mine.length ? ' running' : ''}`, type: 'button', title: app.name });
       btn.innerHTML = appIcon(id, 28);
@@ -229,6 +258,7 @@ export function createDesktop(os, api) {
             api.settings.set('pinned', next);
           } },
           { label: 'Close windows', icon: 'x', hidden: !mine.length, action: () => mine.forEach((win) => wm.close(win.id)) },
+          { label: 'Screenshot', icon: 'image', hidden: !mine.length, action: () => { wm.focus(mine[0].id); api.captureActive?.(); } },
         ]);
       });
       taskList.append(btn);
@@ -407,7 +437,7 @@ export function createDesktop(os, api) {
       return;
     }
     const pinned = el('div', { class: 'start-pinned' });
-    for (const app of api.apps.filter((item) => item.category !== 'games').slice(0, 8)) {
+    for (const app of api.apps.filter((item) => item.category !== 'games' && appVisible(item.id)).slice(0, 8)) {
       const btn = el('button', { class: 'app-tile', type: 'button' });
       btn.innerHTML = appIcon(app.id, 42);
       btn.append(el('span', { text: app.name }));
@@ -417,7 +447,7 @@ export function createDesktop(os, api) {
     body.append(el('h3', { text: 'Apps' }), pinned);
     const cats = ['system', 'productivity', 'media', 'games'];
     for (const cat of cats) {
-      const group = api.apps.filter((item) => item.category === cat);
+      const group = api.apps.filter((item) => item.category === cat && appVisible(item.id));
       if (!group.length) continue;
       body.append(el('h3', { text: cat[0].toUpperCase() + cat.slice(1) }));
       const list = el('div', { class: 'start-list' });
@@ -497,7 +527,8 @@ export function createDesktop(os, api) {
       pad.append(btn);
     }
     pinWrap.append(dots, pad, error);
-    card.append(avatar, name, enter, pinWrap);
+    const users = el('div', { class: 'lock-users' });
+    card.append(avatar, name, users, enter, pinWrap);
     elock.append(time, date, card);
     enter.addEventListener('click', unlock);
     function tick() {
@@ -517,6 +548,13 @@ export function createDesktop(os, api) {
       pinWrap.classList.toggle('hidden', !secured);
       elock.classList.remove('hidden');
       desktop.classList.add('hidden');
+      users.innerHTML = '';
+      for (const user of api.accounts?.list?.() || []) {
+        const btn = el('button', { class: 'btn btn-sm', type: 'button', text: user.name });
+        btn.disabled = user.id === api.accounts.active();
+        btn.addEventListener('click', () => api.accounts.switchTo(user.id));
+        users.append(btn);
+      }
       tick();
     } };
   }
@@ -578,6 +616,9 @@ export function createDesktop(os, api) {
   startBtn.addEventListener('click', () => toggleStart(true));
   powerOn.addEventListener('click', () => { shutdown.classList.add('hidden'); lock.show(); });
   widget.addEventListener('click', () => api.openApp('weather'));
+  clockWidget.addEventListener('click', () => api.openApp('clock'));
+  noteWidget.addEventListener('click', () => api.openApp('markdown'));
+  boardWidget.addEventListener('click', () => api.openApp('kanban'));
 
   document.addEventListener('pointerdown', (event) => {
     if (!start.contains(event.target) && !startBtn.contains(event.target)) start.classList.add('hidden');
@@ -591,11 +632,12 @@ export function createDesktop(os, api) {
   window.addEventListener('keyup', (event) => { if (event.key === 'Alt') switcher.classList.add('hidden'); });
   window.addEventListener('resize', () => { renderIcons(); renderTasks(); });
   api.bus.on('windows', renderTasks);
-  api.bus.on('fs-change', renderIcons);
+  api.bus.on('fs-change', () => { renderIcons(); renderWidget(); });
   api.bus.on('notifications', renderTray);
   api.bus.on('music', renderTray);
   api.settings.onChange((key) => {
-    if (key === 'showWidget' || key === 'weatherCity') renderWidget();
+    if (key === 'showWidget' || key === 'weatherCity' || key === 'widgetClock' || key === 'widgetNote' || key === 'widgetBoard') renderWidget();
+    if (key === 'removedApps') { renderIcons(); renderTasks(); renderStart(); }
     if (key === 'pinned') renderTasks();
     if (key === 'username') renderStart();
     if (key === 'volume' || key === 'muted') renderTray();
@@ -610,6 +652,7 @@ export function createDesktop(os, api) {
       closeTransient();
       return;
     }
+    if (meta && key === ' ' && !event.repeat) { event.preventDefault(); openPalette(); return; }
     if (meta && key.toLowerCase() === 'k') { event.preventDefault(); searchQuery = ''; toggleStart(true); return; }
     if ((meta && key === 'Escape') || (key === 'Meta' && !event.repeat)) { event.preventDefault(); toggleStart(true); return; }
     if (dialogOpen) return;
@@ -646,7 +689,74 @@ export function createDesktop(os, api) {
     else if (meta && event.altKey && key === 'ArrowLeft') { event.preventDefault(); setDesktop(desktopIndex - 1); }
     else if (meta && event.altKey && key === 'ArrowRight') { event.preventDefault(); setDesktop(desktopIndex + 1); }
     else if (meta && event.altKey && key.toLowerCase() === 't') { event.preventDefault(); api.openApp('terminal'); }
-    else if (key === 'Backspace') event.preventDefault();
+    else if (!event.target.closest?.('button:not(.desk-icon), a') && (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight')) {
+      event.preventDefault();
+      moveIcon(key);
+    } else if (key === 'Enter' && event.target.closest?.('.desk-icon')) {
+      event.preventDefault();
+      event.target.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    } else if (key === 'Backspace') event.preventDefault();
+  }
+  function iconButtons() {
+    return [...icons.querySelectorAll('.desk-icon')];
+  }
+  function moveIcon(key) {
+    const buttons = iconButtons();
+    if (!buttons.length) return;
+    const current = buttons.findIndex((btn) => btn.classList.contains('selected'));
+    const stride = phone() ? 4 : Math.max(1, Math.floor((window.innerHeight - 96) / 108));
+    let next = current < 0 ? 0 : current;
+    const vertical = phone() ? stride : 1;
+    const horizontal = phone() ? 1 : stride;
+    if (key === 'ArrowDown') next += vertical;
+    if (key === 'ArrowUp') next -= vertical;
+    if (key === 'ArrowRight') next += horizontal;
+    if (key === 'ArrowLeft') next -= horizontal;
+    next = (next + buttons.length) % buttons.length;
+    buttons.forEach((btn) => btn.classList.remove('selected'));
+    buttons[next].classList.add('selected');
+    buttons[next].focus();
+  }
+  let paletteIndex = 0;
+  function openPalette() {
+    closeTransient();
+    palette.classList.remove('hidden');
+    paletteIndex = 0;
+    paintPalette('');
+    palette.querySelector('input')?.focus();
+    api.sounds?.play('click');
+  }
+  function paintPalette(query) {
+    palette.innerHTML = '';
+    const input = el('input', { class: 'field', placeholder: 'Search apps, files, and commands', 'aria-label': 'Command palette', value: query });
+    const results = el('div', { class: 'palette-results' });
+    palette.append(input, results);
+    const items = query.trim()
+      ? api.search(query)
+      : api.apps.filter((app) => appVisible(app.id)).slice(0, 8).map((app) => ({ type: 'app', title: app.name, subtitle: app.blurb, appId: app.id }));
+    if (!items.length) results.append(el('div', { class: 'empty', text: 'No matches' }));
+    items.forEach((item, index) => {
+      const btn = el('button', { class: `result${index === paletteIndex ? ' active' : ''}`, type: 'button' });
+      btn.append(el('strong', { text: item.title }), el('span', { class: 'muted', text: item.subtitle || '' }));
+      btn.addEventListener('click', () => {
+        palette.classList.add('hidden');
+        if (item.type === 'app') api.openApp(item.appId);
+        else if (item.type === 'file') api.openPath(item.path);
+        else api.runAction(item.actionId);
+      });
+      results.append(btn);
+    });
+    input.addEventListener('input', () => { paletteIndex = 0; paintPalette(input.value); });
+    input.addEventListener('keydown', (event) => {
+      const buttons = [...results.querySelectorAll('.result')];
+      if (event.key === 'ArrowDown') { event.preventDefault(); paletteIndex = Math.min(buttons.length - 1, paletteIndex + 1); buttons.forEach((btn, i) => btn.classList.toggle('active', i === paletteIndex)); }
+      if (event.key === 'ArrowUp') { event.preventDefault(); paletteIndex = Math.max(0, paletteIndex - 1); buttons.forEach((btn, i) => btn.classList.toggle('active', i === paletteIndex)); }
+      if (event.key === 'Enter') buttons[paletteIndex]?.click();
+      if (event.key === 'Escape') palette.classList.add('hidden');
+    });
+    input.focus();
+    const pos = query.length;
+    input.setSelectionRange(pos, pos);
   }
   function snap(mode) {
     const active = wm.active();
@@ -686,6 +796,8 @@ export function createDesktop(os, api) {
     const span = clock.querySelector('span');
     if (strong) strong.textContent = formatTime(now);
     if (span) span.textContent = formatDate(now);
+    const clockFace = clockWidget.querySelector('strong');
+    if (clockFace) clockFace.textContent = formatTime(now);
   }, 1000);
 
   return { wm, lock: lockScreen, unlock, setDesktop, closeTransient, renderIcons };
